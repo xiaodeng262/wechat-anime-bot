@@ -2,6 +2,8 @@ package com.xiaodeng.utils;
 
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Controller;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -14,10 +16,12 @@ import java.util.Arrays;
  * @Description: 请求校验工具类
  * @date 2016年3月4日 下午6:25:41
  */
+@Controller
 public class SignUtil {
 
     // 与接口配置信息中的Token要一致
-    private static String token = "wechat123333";
+    @Value("{wechat.token}")
+    private String token;
 
     /**
      * 验证签名
@@ -27,7 +31,7 @@ public class SignUtil {
      * @param nonce
      * @return
      */
-    public static boolean checkSignature(String signature, String timestamp, String nonce) {
+    public boolean checkSignature(String signature, String timestamp, String nonce) {
         String[] arr = new String[]{token, timestamp, nonce};
         // 将token、timestamp、nonce三个参数进行字典序排序
         Arrays.sort(arr);
@@ -82,11 +86,10 @@ public class SignUtil {
     }
 
 
-
     /**
      * 获取AccessToken
      *
-     * @param appId 填写公众号的appid
+     * @param appId     填写公众号的appid
      * @param appSecret 填写公众号的开发者密码(AppSecret)
      * @return accessToken或null
      */

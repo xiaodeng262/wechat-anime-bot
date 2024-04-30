@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -21,6 +22,7 @@ import java.util.Map;
  * @Date 2024/4/30 09:18
  **/
 @Controller
+@RestController
 @RequestMapping("/wechat")
 public class WeChatController {
     private static final Logger log = LoggerFactory.getLogger(WeChatController.class);
@@ -29,6 +31,20 @@ public class WeChatController {
     @Resource
     private WeChatService weChatService;
 
+
+    @Resource
+    SignUtil signUtil;
+
+    /**
+     * 连通性测试
+     *
+     * @param request
+     * @param response
+     * @param signature
+     * @param timestamp
+     * @param nonce
+     * @param echostr
+     */
     @RequestMapping(value = "security", method = RequestMethod.GET)
     public void doGet(HttpServletRequest request,
                       HttpServletResponse response,
@@ -37,9 +53,8 @@ public class WeChatController {
                       @RequestParam(value = "nonce", required = true) String nonce,
                       @RequestParam(value = "echostr", required = true) String echostr
     ) {
-        log.info(".....");
         try {
-            if (SignUtil.checkSignature(signature, timestamp, nonce)) {
+            if (signUtil.checkSignature(signature, timestamp, nonce)) {
                 PrintWriter out = response.getWriter();
                 out.print(echostr);
                 out.close();

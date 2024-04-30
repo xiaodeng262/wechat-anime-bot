@@ -1,0 +1,5 @@
+wechat:
+  token: wechat123333
+anime:
+  temp: /Users/yu/Desktop/temp/
+  modelName: anime_model_lovelive

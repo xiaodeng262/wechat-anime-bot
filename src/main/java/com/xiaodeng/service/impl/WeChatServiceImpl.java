@@ -1,16 +1,11 @@
 package com.xiaodeng.service.impl;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpUtil;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import com.thoughtworks.xstream.XStream;
-import com.xiaodeng.entity.BaseMsg;
-import com.xiaodeng.entity.NewsMsg;
-import com.xiaodeng.entity.TextMsg;
+import com.xiaodeng.model.entity.anime.Anime;
+import com.xiaodeng.model.entity.wechat.BaseMsg;
+import com.xiaodeng.model.entity.wechat.NewsMsg;
+import com.xiaodeng.model.entity.wechat.TextMsg;
+import com.xiaodeng.service.AnimeTraceService;
 import com.xiaodeng.service.WeChatService;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -18,6 +13,7 @@ import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.io.InputStream;
 import java.util.Date;
 import java.util.HashMap;
@@ -30,6 +26,12 @@ import java.util.Map;
  **/
 @Service
 public class WeChatServiceImpl implements WeChatService {
+
+
+    @Resource
+    AnimeTraceService animeTraceService;
+
+
     @Override
     public Map<String, String> parseRequest(InputStream is) {
         Map<String, String> map = new HashMap<String, String>();
@@ -61,7 +63,7 @@ public class WeChatServiceImpl implements WeChatService {
         String msgType = requestMap.get("MsgType");
         switch (msgType) {
             case "text":
-                msg = dealTextMsg(requestMap);
+                //msg = dealTextMsg(requestMap);
                 break;
             case "image":
                 msg = dealImageMsg(requestMap);
@@ -74,7 +76,6 @@ public class WeChatServiceImpl implements WeChatService {
             return beanToXml(msg);
         }
         return null;
-
     }
 
 
@@ -84,7 +85,7 @@ public class WeChatServiceImpl implements WeChatService {
      * @param msg
      * @return
      */
-    private static String beanToXml(BaseMsg msg) {
+    private String beanToXml(BaseMsg msg) {
         XStream stream = new XStream();
         stream.processAnnotations(TextMsg.class);
         stream.processAnnotations(NewsMsg.class);
@@ -98,7 +99,7 @@ public class WeChatServiceImpl implements WeChatService {
      *
      * @return
      */
-    private static BaseMsg dealTextMsg(Map<String, String> requestMap) {
+    private BaseMsg dealTextMsg(Map<String, String> requestMap) {
         // 获取用户发送的消息内容
         String msg = requestMap.get("Content");
         return new TextMsg(requestMap, new Date(System.currentTimeMillis()) + "你好");
@@ -111,65 +112,14 @@ public class WeChatServiceImpl implements WeChatService {
      * @param requestMap
      * @return
      */
-    private static BaseMsg dealImageMsg(Map<String, String> requestMap) {
+    private BaseMsg dealImageMsg(Map<String, String> requestMap) {
         String picUrl = requestMap.get("PicUrl");
-        return new TextMsg(requestMap, Recognize("动漫模型", false, picUrl));
-    }
-
-    static Map<String, String> modelList = new HashMap<String, String>() {{
-        put("动漫模型", "anime");
-        put("高准确率公测动漫模型", "anime_model_lovelive");
-        put("GalGame模型", "game");
-        put("高准确率公测GalGame模型", "game_model_kirakira");
-    }};
-
-    private static String downloadImage(String imageUrl) {
-        // 指定下载后的本地文件路径
-        //String localPath = "/Users/yu/Desktop/temp/temp_image.png";
-        String localPath = "/root/temp/temp_image.png";
-        try {
-            HttpUtil.downloadFile(imageUrl, FileUtil.file(localPath));
-            return localPath;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+        Anime animeTrace = animeTraceService.getAnimeTrace(picUrl);
+        if (animeTrace == null) {
+            return new TextMsg(requestMap, "查找失败，请检查图片是否清晰，另请确保您需要识别图片中角色的人脸的方向是正向的，不能倒向。");
         }
-    }
-
-    private static String Recognize(String modelName, boolean aiDetect, String imageUrl) {
-        if (modelList.get(modelName) == null) {
-            return "模型不存在";
-        }
-
-        String localImagePath = downloadImage(imageUrl);
-        if (localImagePath == null) {
-            return "图片下载失败";
-        }
-
-        int flagAiDetect = aiDetect ? 1 : 0;
-        String url = String.format("https://aiapiv2.animedb.cn/ai/api/detect?force_one=0&model=%s&ai_detect=%s",
-                modelName, flagAiDetect);
-
-        HttpResponse response = HttpRequest.post(url)
-                .form("image", FileUtil.file(localImagePath))
-                .execute();
-
-        // 删除临时文件
-        FileUtil.del(localImagePath);
-
-        if (response.isOk()) {
-            JSONObject jsonObject = JSON.parseObject(response.body());
-            JSONArray dataArray = jsonObject.getJSONArray("data");
-            if (dataArray != null && !dataArray.isEmpty()) {
-                JSONObject dataItem = dataArray.getJSONObject(0);
-                String name = dataItem.getString("name");
-                String cartoonname = dataItem.getString("cartoonname");
-                return "识别成功！角色:" + name + ",番名:" + cartoonname;
-            }
-            return "未查到!";
-        } else {
-            return "请求失败，状态码：" + response.getStatus();
-        }
+        String message = "角色:" + animeTrace.getName() + ", 番剧:《" + animeTrace.getCartoonName() + "》(信息只供参考，如不准确，可联系作者获得帮助)";
+        return new TextMsg(requestMap, message);
     }
 
 

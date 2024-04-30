@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: wechat-bot
+  profiles:
+    active: pro
+server:
+  port: 8080

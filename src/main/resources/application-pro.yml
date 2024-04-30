@@ -1,0 +1,5 @@
+wechat:
+  token: wechat123333
+anime:
+  temp: /root/temp/
+  modelName: anime_model_lovelive

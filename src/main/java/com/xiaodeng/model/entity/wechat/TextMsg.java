@@ -1,4 +1,4 @@
-package com.xiaodeng.entity;
+package com.xiaodeng.model.entity.wechat;
 
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import lombok.AllArgsConstructor;
